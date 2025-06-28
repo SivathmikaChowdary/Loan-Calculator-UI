@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Home Loan EMI Calculator</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f0f0f0;
+    }
+
+    .container {
+      background: #fff;
+      max-width: 1100px;
+      margin: 50px auto;
+      display: flex;
+      border-radius: 16px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+      overflow: hidden;
+    }
+
+    .left {
+      flex: 1;
+      padding: 30px;
+    }
+
+    .right {
+      flex: 1;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    h3 {
+      margin-bottom: 15px;
+    }
+
+    input[type=range], input[type=number] {
+      width: 100%;
+      margin: 10px 0 20px;
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 15px 25px;
+      background: #ffe8b3;
+      font-weight: bold;
+      border-radius: 30px;
+      text-align: center;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 12px 25px;
+      background: #f07b23;
+      border: none;
+      color: #fff;
+      font-weight: bold;
+      border-radius: 25px;
+      cursor: pointer;
+    }
+
+    .legend {
+      margin-top: 20px;
+      text-align: left;
+    }
+
+    .legend div {
+      margin-bottom: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="left">
+      <h3>Select the loan amount range</h3>
+      <input type="radio" name="range" checked /> 1 Crore - 5 Crore
+
+      <label>Loan Amount</label>
+      <input type="number" id="loanAmount" value="160468285" />
+      <input type="range" id="loanSlider" min="0" max="500000000" step="1000000" value="160468285" />
+
+      <label>Illustrative Interest Rate p.a.</label>
+      <input type="number" id="interestRate" value="7" />
+      <input type="range" id="rateSlider" min="1" max="20" value="7" />
+
+      <label>Tenure (Months / Years)</label>
+      <input type="number" id="loanTenure" value="13" />
+      <input type="range" id="tenureSlider" min="1" max="30" value="13" />
+    </div>
+
+    <div class="right">
+      <canvas id="pieChart" width="200" height="200"></canvas>
+      <div class="legend" id="legend"></div>
+      <div class="result" id="emiResult"></div>
+      <button>APPLY FOR HOME LOAN</button>
+    </div>
+  </div>
+
+  <script>
+    const loanInput = document.getElementById('loanAmount');
+    const rateInput = document.getElementById('interestRate');
+    const tenureInput = document.getElementById('loanTenure');
+    const loanSlider = document.getElementById('loanSlider');
+    const rateSlider = document.getElementById('rateSlider');
+    const tenureSlider = document.getElementById('tenureSlider');
+    const legendDiv = document.getElementById('legend');
+    const emiResult = document.getElementById('emiResult');
+
+    let pieChart;
+
+    function calculateEMI(P, R, T) {
+      const monthlyRate = R / (12 * 100);
+      const n = T * 12;
+      const emi = P * monthlyRate * Math.pow(1 + monthlyRate, n) / (Math.pow(1 + monthlyRate, n) - 1);
+      const total = emi * n;
+      const interest = total - P;
+      return { emi, total, interest };
+    }
+
+    function updateChart() {
+      const principal = parseFloat(loanInput.value);
+      const rate = parseFloat(rateInput.value);
+      const tenure = parseFloat(tenureInput.value);
+
+      const { emi, total, interest } = calculateEMI(principal, rate, tenure);
+
+      if (pieChart) pieChart.destroy();
+      const pieCtx = document.getElementById('pieChart');
+      pieChart = new Chart(pieCtx, {
+        type: 'pie',
+        data: {
+          labels: ['Principal', 'Interest'],
+          datasets: [{
+            data: [principal, interest],
+            backgroundColor: ['#8B0000', '#f07b23']
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'top' },
+            tooltip: { enabled: true }
+          }
+        }
+      });
+
+      legendDiv.innerHTML = `
+        <div style="color:#8B0000;">Principal amount: ₹${principal.toFixed(2)}</div>
+        <div style="color:#f07b23;">Interest amount: ₹${interest.toFixed(2)}</div>
+        <div><strong>Total amount:</strong> ₹${total.toFixed(2)}</div>
+      `;
+
+      emiResult.textContent = `Your Monthly EMI is: ₹${emi.toFixed(2)}`;
+    }
+
+    [loanInput, rateInput, tenureInput, loanSlider, rateSlider, tenureSlider].forEach(el => {
+      el.addEventListener('input', () => {
+        loanInput.value = loanSlider.value;
+        loanSlider.value = loanInput.value;
+
+        rateInput.value = rateSlider.value;
+        rateSlider.value = rateInput.value;
+
+        tenureInput.value = tenureSlider.value;
+        tenureSlider.value = tenureInput.value;
+
+        updateChart();
+      });
+    });
+
+    window.onload = updateChart;
+  </script>
+</body>
+</html>
+
